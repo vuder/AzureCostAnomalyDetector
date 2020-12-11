@@ -24,7 +24,7 @@ namespace AzureCostAnomalyDetector.Common
         public async Task DetectForLastDay(LastDayDetectionContext lastDayDetectionContext)
         {
             CreateAnomalyDetectorClient();
-            var costGroupings = await CostAzureCostGroupedByResourceType(lastDayDetectionContext.DayToCheck, lastDayDetectionContext.Period);
+            var costGroupings = await CostAzureCostGroupedByResourceType(lastDayDetectionContext.DayToCheck, lastDayDetectionContext.Period, lastDayDetectionContext.SubscriptionId);
 
             foreach (var costGrouping in costGroupings)
             {
@@ -34,18 +34,6 @@ namespace AzureCostAnomalyDetector.Common
                     var result = await DetectAnomalies(orderedCostRequest);
                     ReportAnomalies(lastDayDetectionContext, orderedCostRequest, result, azureResource);
                 }
-            }
-        }
-
-        private static void ReportAnomalies(LastDayDetectionContext lastDayDetectionContext, Request orderedCostRequest,
-            LastDetectResponse result, string azureResource)
-        {
-            var lastPoint = orderedCostRequest.Series.Last();
-            //The anomaly must be reported only if it is detected at the specified in lastDay variable, but not is last known date with cost returned from Azure Cost Management
-            if (result.IsAnomaly && lastPoint.Value > lastDayDetectionContext.CostAlertThreshold &&
-                lastPoint.Timestamp == lastDayDetectionContext.DayToCheck)
-            {
-                lastDayDetectionContext.OnAnomalyDetected(azureResource, lastPoint.Timestamp, lastPoint.Value);
             }
         }
 
@@ -88,9 +76,9 @@ namespace AzureCostAnomalyDetector.Common
             return (true, azureResource, orderedCostRequest);
         }
 
-        private async Task<IEnumerable<IGrouping<string, AzureCost>>> CostAzureCostGroupedByResourceType(DateTime dayToCheck, string period)
+        private async Task<IEnumerable<IGrouping<string, AzureCost>>> CostAzureCostGroupedByResourceType(DateTime dayToCheck, string period, string subscriptionId)
         {
-            var azureCost = await _costRetriever.GetAzureCosts(period, dayToCheck);
+            var azureCost = await _costRetriever.GetAzureCosts(period, dayToCheck, subscriptionId);
             var costGroupings = azureCost.GroupBy(point => point.Name);
             return costGroupings;
         }
@@ -99,6 +87,18 @@ namespace AzureCostAnomalyDetector.Common
         {
             LastDetectResponse result = await _anomalyDetectorClient.LastDetectAsync(orderedCostRequest).ConfigureAwait(false);
             return result;
+        }
+
+        private static void ReportAnomalies(LastDayDetectionContext lastDayDetectionContext, Request orderedCostRequest,
+            LastDetectResponse result, string azureResource)
+        {
+            var lastPoint = orderedCostRequest.Series.Last();
+            //The anomaly must be reported only if it is detected at the specified in lastDay variable, but not is last known date with cost returned from Azure Cost Management
+            if (result.IsAnomaly && lastPoint.Value > lastDayDetectionContext.CostAlertThreshold &&
+                lastPoint.Timestamp == lastDayDetectionContext.DayToCheck)
+            {
+                lastDayDetectionContext.OnAnomalyDetected(azureResource, lastPoint.Timestamp, lastPoint.Value);
+            }
         }
     }
 }

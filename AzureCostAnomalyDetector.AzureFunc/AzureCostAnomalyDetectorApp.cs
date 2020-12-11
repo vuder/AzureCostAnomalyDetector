@@ -10,15 +10,15 @@ namespace AzureCostAnomalyDetector.AzureFunc
 {
     public static class AzureCostAnomalyDetectorApp
     {
-        private static readonly IConfiguration _configuration;
         private static readonly string _anomalyDetectorEndpoint;
         private static readonly string _anomalyDetectorKey;
         private static readonly double _costAlertThreshold;
         private static readonly string _period;
+        private static readonly string _azureTenantId;
         private static readonly string _azureSubscriptionId;
         private static readonly string _azureAppRegistrationClientSecret;
         private static readonly string _azureAppRegistrationClientId;
-        
+
         static AzureCostAnomalyDetectorApp()
         {
             var builder = new ConfigurationBuilder();
@@ -30,17 +30,20 @@ namespace AzureCostAnomalyDetector.AzureFunc
                                                        {
                                                            kv.SetCredential(credentials);
                                                        }));
-            _configuration = builder.Build();
+            var configuration = builder.Build();
 
-            _anomalyDetectorEndpoint = _configuration["AzureCostAnomalyDetector.AnomalyDetectorEndpoint"];
-            _anomalyDetectorKey = _configuration["AzureCostAnomalyDetector.AnomalyDetectorKey"];
+            _anomalyDetectorEndpoint = configuration["AzureCostAnomalyDetector.AnomalyDetectorEndpoint"];
+            _anomalyDetectorKey = configuration["AzureCostAnomalyDetector.AnomalyDetectorKey"];
 
-            _costAlertThreshold = double.Parse(_configuration["AzureCostAnomalyDetector.CostAlertThreshold"]);
-            _period = _configuration["AzureCostAnomalyDetector.AnomalyDetectorCheckPeriod"];
+            _costAlertThreshold = double.Parse(configuration["AzureCostAnomalyDetector.CostAlertThreshold"]);
+            _period = configuration["AzureCostAnomalyDetector.AnomalyDetectorCheckPeriod"];
 
-            _azureSubscriptionId = _configuration["AzureCostAnomalyDetector.AzureSubscriptionId"];
-            _azureAppRegistrationClientSecret = _configuration["AzureCostAnomalyDetector.AzureAppRegistrationClientSecret"];
-            _azureAppRegistrationClientId = _configuration["AzureCostAnomalyDetector.AzureAppRegistrationClientId"];
+
+            _azureTenantId = configuration["Ad.AzureTenantId"];
+            _azureSubscriptionId = configuration["AzureCostAnomalyDetector.AzureSubscriptionId"];
+            _azureAppRegistrationClientSecret = configuration["AzureCostAnomalyDetector.AzureAppRegistrationClientSecret"];
+            _azureAppRegistrationClientId = configuration["AzureCostAnomalyDetector.AzureAppRegistrationClientId"];
+            
         }
 
         [FunctionName("AzureCostAnomalyDetector")]
@@ -52,11 +55,12 @@ namespace AzureCostAnomalyDetector.AzureFunc
         {
             logger.LogInformation($"Trigger function execution at {DateTime.Now}");
 
-            var costRetriever = new AzureCostRetrieverService(_azureAppRegistrationClientId, _azureAppRegistrationClientSecret, _azureSubscriptionId);
+            var costRetriever = new AzureCostRetrieverService(_azureAppRegistrationClientId, _azureAppRegistrationClientSecret, _azureTenantId, logger);
 
             var detectionContext = new LastDayDetectionContext(
                 DateTime.UtcNow.AddDays(-2),
                 _period,
+                _azureSubscriptionId,
                 _costAlertThreshold,
                 onAnomalyDetected: (resourceType, date, anomalyValue) =>
                     {
