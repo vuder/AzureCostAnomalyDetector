@@ -24,7 +24,7 @@ namespace AzureCostAnomalyDetector.Common
         public async Task DetectForLastDay(LastDayDetectionContext lastDayDetectionContext)
         {
             CreateAnomalyDetectorClient();
-            var costGroupings = await CostAzureCostGroupedByResourceType(lastDayDetectionContext.DayToCheck, lastDayDetectionContext.Period, lastDayDetectionContext.SubscriptionId);
+            var costGroupings = await CostAzureCostGroupedByResourceType(lastDayDetectionContext.DayToCheck, lastDayDetectionContext.PeriodDays, lastDayDetectionContext.SubscriptionId);
 
             foreach (var costGrouping in costGroupings)
             {
@@ -56,29 +56,27 @@ namespace AzureCostAnomalyDetector.Common
             //12 is the minimum number of data points that Anomaly Detector API accept
             if (orderedCost.Length < 12)
             {
+                var lastCost = orderedCost.Last();
+                //If the resource is just created or billed less then 12 times - it should be reported when both:
+                //   - It's cost higher then costAlertThreshold
+                //   - It's last known date returned from Azure Cost Management is the date specified in lastDay variable
+                if (lastCost.Amount > lastDayDetectionContext.CostAlertThreshold && lastCost.Date == lastDayDetectionContext.DayToCheck)
+                {
+                    lastDayDetectionContext.OnAnomalyDetected(azureResource, lastCost.Date, lastCost.Amount);
+                }
+                else
+                {
+                    lastDayDetectionContext.OnNotEnoughValues(azureResource);
+                }
                 return (false, azureResource, null);
-            }
-            
-            var lastCost = orderedCost.Last();
-            //If the resource is just created or billed less then 12 times - it should be reported when both:
-            //   - It's cost higher then costAlertThreshold
-            //   - It's last known date returned from Azure Cost Management is the date specified in lastDay variable
-            if (lastCost.Amount > lastDayDetectionContext.CostAlertThreshold &&
-                lastCost.Date == lastDayDetectionContext.DayToCheck)
-            {
-                lastDayDetectionContext.OnAnomalyDetected(azureResource, lastCost.Date, lastCost.Amount);
-            }
-            else
-            {
-                lastDayDetectionContext.OnNotEnoughValues(azureResource);
             }
 
             return (true, azureResource, orderedCostRequest);
         }
 
-        private async Task<IEnumerable<IGrouping<string, AzureCost>>> CostAzureCostGroupedByResourceType(DateTime dayToCheck, string period, string subscriptionId)
+        private async Task<IEnumerable<IGrouping<string, AzureCost>>> CostAzureCostGroupedByResourceType(DateTime dayToCheck, int periodDays, string subscriptionId)
         {
-            var azureCost = await _costRetriever.GetAzureCosts(period, dayToCheck, subscriptionId);
+            var azureCost = await _costRetriever.GetAzureCosts(periodDays, dayToCheck, subscriptionId);
             var costGroupings = azureCost.GroupBy(point => point.Name);
             return costGroupings;
         }

@@ -18,7 +18,6 @@ namespace AzureCostAnomalyDetector.Common
         private readonly string _tenantId;
         private readonly ILogger _logger;
         private static readonly HttpClient _httpClient = new HttpClient();
-        private static readonly Regex _periodPatternRegex = new Regex("(?<num>[0-9]*) ?(?<word>[A-Za-z]*)", RegexOptions.Compiled);
         private static readonly Regex _accessTokenInJWTRegex = new Regex("\"access_token\":\"(?<token>.*)\"");
 
         public AzureCostRetrieverService(string clientId, string clientSecret, string tenantId, ILogger logger = null)
@@ -29,10 +28,9 @@ namespace AzureCostAnomalyDetector.Common
             _logger = logger;
         }
 
-        public async Task<IEnumerable<AzureCost>> GetAzureCosts(string period, DateTime lastDay, string subscriptionId)
+        public async Task<IEnumerable<AzureCost>> GetAzureCosts(int periodDays, DateTime lastDay, string subscriptionId)
         {
-            int daysBack = GetDaysOffset(period);
-            var dateFrom = lastDay.AddDays(-1 * daysBack).ToString("yyyy-MM-dd");
+            var dateFrom = lastDay.AddDays(-1 * periodDays).ToString("yyyy-MM-dd");
             var dateTo = lastDay.ToString("yyyy-MM-dd");
             var content = new StringContent(@"
             {   
@@ -90,25 +88,6 @@ namespace AzureCostAnomalyDetector.Common
 
             _logger?.LogInformation("Data load completed");
             return result;
-        }
-
-        private static int GetDaysOffset(string period)
-        {
-            if (string.IsNullOrWhiteSpace(period)) { return 90; }
-            var match = _periodPatternRegex.Match(period);
-            if (!match.Success) { return 90; }
-            int num = int.Parse(match.Groups["num"].Value);
-            string interval = match.Groups["word"].Value.ToLower().Trim();
-            int intervalNum = 1;
-            switch (interval)
-            {
-                case "week": { intervalNum = 7; break; }
-                case "weeks": { intervalNum = 7; break; }
-                case "month": { intervalNum = 30; break; }
-                case "year": { intervalNum = 365; break; }
-                case "years": { intervalNum = 365; break; }
-            }
-            return num * intervalNum;
         }
 
         private async Task<string> GetAccessToken()
