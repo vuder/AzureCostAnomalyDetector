@@ -12,10 +12,10 @@ namespace AzureCostAnomalyDetector.Common
         public int PeriodDays { get; }
         public string SubscriptionId { get; }
         public double CostAlertThreshold { get; }
-        public Action<string, DateTime, double> OnAnomalyDetected { get; }
+        public Action<AzureCostAnomalyType, string, DateTime, double> OnAnomalyDetected { get; }
         public Action<string> OnNotEnoughValues { get; }
 
-        public LastDayDetectionContext(DateTime dayToCheck, string period, string subscriptionId, double costAlertThreshold, Action<string, DateTime, double> onAnomalyDetected, Action<string> onNotEnoughValues)
+        public LastDayDetectionContext(DateTime dayToCheck, string period, string subscriptionId, double costAlertThreshold, Action<AzureCostAnomalyType, string, DateTime, double> onAnomalyDetected, Action<string> onNotEnoughValues)
         {
             DayToCheck = dayToCheck.Date;
             Period = period;

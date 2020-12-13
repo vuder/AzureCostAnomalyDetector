@@ -18,6 +18,7 @@ namespace AzureCostAnomalyDetector.AzureFunc
         private static readonly string _anomalyDetectorKey;
         private static readonly double _costAlertThreshold;
         private static readonly string _period;
+        private static readonly int _daysBackToCheck;
         private static readonly string _azureTenantId;
         private static readonly string _azureSubscriptionId;
         private static readonly string _azureAppRegistrationClientSecret;
@@ -42,6 +43,7 @@ namespace AzureCostAnomalyDetector.AzureFunc
 
             _costAlertThreshold = double.Parse(configuration["AzureCostAnomalyDetector.CostAlertThreshold"]);
             _period = configuration["AzureCostAnomalyDetector.AnomalyDetectorCheckPeriod"];
+            _daysBackToCheck = int.Parse(configuration["AzureCostAnomalyDetector.AnomalyDetectorCheckDaysBack"]);
 
 
             _azureTenantId = configuration["Ad.AzureTenantId"];
@@ -64,32 +66,26 @@ namespace AzureCostAnomalyDetector.AzureFunc
 
             var costRetriever = new AzureCostRetrieverService(_azureAppRegistrationClientId, _azureAppRegistrationClientSecret, _azureTenantId, logger);
 
-            DateTime dayToCheck = DateTime.UtcNow.AddDays(-2);
+            DateTime dayToCheck = DateTime.UtcNow.AddDays(_daysBackToCheck);
             var detectionContext = new LastDayDetectionContext(
                 dayToCheck,
                 _period,
                 _azureSubscriptionId,
                 _costAlertThreshold,
-                onAnomalyDetected: (resourceType, date, anomalyValue) =>
+                onAnomalyDetected: (anomalyType, resourceType, date, anomalyValue) =>
                     {
                         var value = Math.Round(anomalyValue, 2);
                         var anomalyEvent = new EventTelemetry("Azure cost anomaly");
                         anomalyEvent.Properties["Resource Type"] = resourceType;
                         anomalyEvent.Properties["Anomaly Cost"] = value.ToString(CultureInfo.InvariantCulture);
                         anomalyEvent.Properties["Date"] = date.ToShortDateString();
-                        anomalyEvent.Properties["Detection Type"] = "Spike of cost";
+                        anomalyEvent.Properties["Detection Type"] = anomalyType.ToString();
                         _telemetryClient.TrackEvent(anomalyEvent);
                         _telemetryClient.Flush();
                         logger.LogError($"Anomaly for {resourceType} value ${value} at {date.ToShortDateString()}");
                     },
                 onNotEnoughValues: (resourceType) =>
                     {
-                        var anomalyEvent = new EventTelemetry("Azure cost anomaly");
-                        anomalyEvent.Properties["Resource Type"] = resourceType;
-                        anomalyEvent.Properties["Date"] = dayToCheck.ToShortDateString();
-                        anomalyEvent.Properties["Detection Type"] = "New resource with high cost";
-                        _telemetryClient.TrackEvent(anomalyEvent);
-                        _telemetryClient.Flush();
                         logger.LogWarning($"Not enough values: {resourceType}");
                     }
                 );

@@ -32,7 +32,7 @@ namespace AzureCostAnomalyDetector.Common
                 if (detectionPossible)
                 {
                     var result = await DetectAnomalies(orderedCostRequest);
-                    ReportAnomalies(lastDayDetectionContext, orderedCostRequest, result, azureResource);
+                    ReportAnomalies(AzureCostAnomalyType.Spike, lastDayDetectionContext, orderedCostRequest, result, azureResource);
                 }
             }
         }
@@ -62,7 +62,7 @@ namespace AzureCostAnomalyDetector.Common
                 //   - It's last known date returned from Azure Cost Management is the date specified in lastDay variable
                 if (lastCost.Amount > lastDayDetectionContext.CostAlertThreshold && lastCost.Date == lastDayDetectionContext.DayToCheck)
                 {
-                    lastDayDetectionContext.OnAnomalyDetected(azureResource, lastCost.Date, lastCost.Amount);
+                    lastDayDetectionContext.OnAnomalyDetected(AzureCostAnomalyType.NewResourceWithHighCost, azureResource, lastCost.Date, lastCost.Amount);
                 }
                 else
                 {
@@ -87,7 +87,7 @@ namespace AzureCostAnomalyDetector.Common
             return result;
         }
 
-        private static void ReportAnomalies(LastDayDetectionContext lastDayDetectionContext, Request orderedCostRequest,
+        private static void ReportAnomalies(AzureCostAnomalyType anomalyType, LastDayDetectionContext lastDayDetectionContext, Request orderedCostRequest,
             LastDetectResponse result, string azureResource)
         {
             var lastPoint = orderedCostRequest.Series.Last();
@@ -95,7 +95,7 @@ namespace AzureCostAnomalyDetector.Common
             if (result.IsAnomaly && lastPoint.Value > lastDayDetectionContext.CostAlertThreshold &&
                 lastPoint.Timestamp == lastDayDetectionContext.DayToCheck)
             {
-                lastDayDetectionContext.OnAnomalyDetected(azureResource, lastPoint.Timestamp, lastPoint.Value);
+                lastDayDetectionContext.OnAnomalyDetected(anomalyType, azureResource, lastPoint.Timestamp, lastPoint.Value);
             }
         }
     }
