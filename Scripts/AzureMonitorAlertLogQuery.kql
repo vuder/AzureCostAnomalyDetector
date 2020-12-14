@@ -1,0 +1,15 @@
+ let todayEvents=customEvents 
+//| where timestamp>ago(1d) 
+| where name == "Azure cost anomaly"
+| where startofday(timestamp) == startofday(now())
+| summarize countToday=count() by tostring(customDimensions.DetectionId), todayDetectionId = tostring(customDimensions.DetectionId)
+| project countToday, todayDetectionId;
+let lastEvents=customEvents 
+| where timestamp>ago(15m)
+| summarize countLast=count() by tostring(customDimensions.DetectionId), lastDetectionId = tostring(customDimensions.DetectionId), Type=tostring(customDimensions.["Detection Type"]), Resource=tostring(customDimensions.["Resource Type"]), Date=tostring(customDimensions.Date), Cost=tostring(customDimensions.["Anomaly Cost"])
+| project lastDetectionId, countLast, Date, Type, Resource, Cost;
+lastEvents
+| join todayEvents on $left.lastDetectionId == $right.todayDetectionId
+| where countToday <= countLast
+| project Date, Type, Resource, Cost, countToday, countLast
+| order by Cost
