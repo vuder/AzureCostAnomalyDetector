@@ -32,7 +32,7 @@ namespace AzureCostAnomalyDetector.Common
                 if (detectionPossible)
                 {
                     var result = await DetectAnomalies(orderedCostRequest);
-                    ReportAnomalies(AzureCostAnomalyType.Spike, lastDayDetectionContext, orderedCostRequest, result, azureResource);
+                    ReportAnomalies(lastDayDetectionContext, orderedCostRequest, result, azureResource);
                 }
             }
         }
@@ -87,7 +87,7 @@ namespace AzureCostAnomalyDetector.Common
             return result;
         }
 
-        private static void ReportAnomalies(AzureCostAnomalyType anomalyType, LastDayDetectionContext lastDayDetectionContext, Request orderedCostRequest,
+        private static void ReportAnomalies(LastDayDetectionContext lastDayDetectionContext, Request orderedCostRequest,
             LastDetectResponse result, string azureResource)
         {
             var lastPoint = orderedCostRequest.Series.Last();
@@ -95,6 +95,7 @@ namespace AzureCostAnomalyDetector.Common
             if (result.IsAnomaly && lastPoint.Value > lastDayDetectionContext.CostAlertThreshold &&
                 lastPoint.Timestamp == lastDayDetectionContext.DayToCheck)
             {
+                var anomalyType = result.IsNegativeAnomaly ? AzureCostAnomalyType.Drop : AzureCostAnomalyType.Spike; 
                 lastDayDetectionContext.OnAnomalyDetected(anomalyType, azureResource, lastPoint.Timestamp, lastPoint.Value);
             }
         }

@@ -14,8 +14,9 @@ namespace AzureCostAnomalyDetector.Common
         public double CostAlertThreshold { get; }
         public Action<AzureCostAnomalyType, string, DateTime, double> OnAnomalyDetected { get; }
         public Action<string> OnNotEnoughValues { get; }
+        public bool ReportDrops { get; }
 
-        public LastDayDetectionContext(DateTime dayToCheck, string period, string subscriptionId, double costAlertThreshold, Action<AzureCostAnomalyType, string, DateTime, double> onAnomalyDetected, Action<string> onNotEnoughValues)
+        public LastDayDetectionContext(DateTime dayToCheck, string period, string subscriptionId, double costAlertThreshold, bool reportDrops, Action<AzureCostAnomalyType, string, DateTime, double> onAnomalyDetected, Action<string> onNotEnoughValues)
         {
             DayToCheck = dayToCheck.Date;
             Period = period;
@@ -24,6 +25,7 @@ namespace AzureCostAnomalyDetector.Common
             CostAlertThreshold = costAlertThreshold;
             OnAnomalyDetected = onAnomalyDetected;
             OnNotEnoughValues = onNotEnoughValues;
+            ReportDrops = reportDrops;
         }
 
         private static int GetDaysOffset(string period)
