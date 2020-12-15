@@ -9,7 +9,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AzureCostAnomalyDetector.Az
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Scripts", "Scripts", "{E9E2331D-6C7D-464A-A67A-0787C71F0C40}"
 	ProjectSection(SolutionItems) = preProject
-		AzureMonitorAlertLogQuery.kql = AzureMonitorAlertLogQuery.kql
+		Scripts\AzureMonitorAlertLogQuery.kql = Scripts\AzureMonitorAlertLogQuery.kql
 	EndProjectSection
 EndProject
 Global

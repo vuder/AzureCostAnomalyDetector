@@ -1,5 +1,5 @@
  let todayEvents=customEvents 
-//| where timestamp>ago(1d) 
+//| where timestamp>ago(1d) //this one is overriden by "Evaluated based on Period" setting of alert condition
 | where name == "Azure cost anomaly"
 | where startofday(timestamp) == startofday(now())
 | summarize countToday=count() by tostring(customDimensions.DetectionId), todayDetectionId = tostring(customDimensions.DetectionId)
@@ -11,5 +11,5 @@ let lastEvents=customEvents
 lastEvents
 | join todayEvents on $left.lastDetectionId == $right.todayDetectionId
 | where countToday <= countLast
-| project Date, Type, Resource, Cost, countToday, countLast
+| project Date, Type, Resource, Cost
 | order by Cost
