@@ -63,9 +63,9 @@ namespace AzureCostAnomalyDetector.AzureFunc
         }
 
         [FunctionName("AzureCostAnomalyDetector")]
-        public static async Task Run([TimerTrigger("0 0 1 * * *", 
+        public static async Task Run([TimerTrigger("0 0 1 * * *"
             #if DEBUG 
-                RunOnStartup = true
+                , RunOnStartup = true
             #endif
                 ) ]TimerInfo myTimer, ILogger logger)
         {
