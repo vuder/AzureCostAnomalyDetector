@@ -19,12 +19,12 @@ In addition to main goal of implementation we will also see how to:
 
 - use Azure Cost Management API
 - use Azure Anomaly Detector service to analyze costs for spikes and dips
-- setup Dependency Injection in Azure functions
 - setup Managed Identity to authorize Azure function to access something
-- configure alerts in Azure Monitor
+- setup Dependency Injection in Azure functions
 - use Azure Configuration service together with Azure functions
-- send metrics to Azure Application Insights
 - run time triggered Azure function when debugging is starting
+- send metrics with custom properties to Azure Application Insights
+- [configure alerts with custom fields in Azure Monitor](##alert-setup)
 
 ## Detection of anomalies in Azure cost
 
@@ -34,11 +34,17 @@ Anomaly Detector automatically selects the right anomaly detection algorithm to 
 
 The function will be able to alert you when consumption of certain type of resource (e.g. CosmosDB) is increased not only in obvious cases like this:
 
+![Alt text](pics/Simple%20Spike.png?raw=true "Simple cost spike detected")
+
+or
+
+![Alt text](pics/Simple%20Spike%202.png?raw=true "Simple cost spike detected 2")
+
 but also in more advanced situations:
 
-If I was checking this manually, most likely I would not find any issue here. But the service figured out that there is a deviation in the data on weekends and detected anomaly for weekends and weekdays separately.
+![Alt text](pics/weekends%20anomaly.png?raw=true "Advanced cost spike detected")
 
-
+If I was checking this manually, most likely I would not find any issue here. But the service figured out that there is a deviation in the data on weekends and detected anomalies for weekends and weekdays separately.
 
 ## Azure AD App Registration setup
 
@@ -46,10 +52,43 @@ The app registration required
 
 ## Alert setup
 
-## How does it cost?
+Alert rule is configured in Azure Monitor using following query:
+
+```code
+ let todayEvents=customEvents 
+| where name == "Azure cost anomaly"
+| where startofday(timestamp) == startofday(now())
+| summarize countToday=count() by tostring(customDimensions.DetectionId), todayDetectionId = tostring(customDimensions.DetectionId)
+| project countToday, todayDetectionId;
+let lastEvents=customEvents 
+| where timestamp>ago(15m)
+| summarize countLast=count() by tostring(customDimensions.DetectionId), lastDetectionId = tostring(customDimensions.DetectionId), Type=tostring(customDimensions.["Detection Type"]), Resource=tostring(customDimensions.["Resource Type"]), Date=tostring(customDimensions.Date), Cost=tostring(customDimensions.["Anomaly Cost"])
+| project lastDetectionId, countLast, Date, Type, Resource, Cost;
+lastEvents
+| join todayEvents on $left.lastDetectionId == $right.todayDetectionId
+| where countToday <= countLast
+| project Date, Type, Resource, Cost
+| order by Cost
+```
+
+[AzureMonitorAlertLogQuery.kql](Scripts/AzureMonitorAlertLogQuery.kql)
+
+![Alt text](pics/AlertRuleSignalConfiguration.png?raw=true "Alert rule signal configuration")
+
+The query looks a bit more complex that it should be. The reason is that I wanted to deduplicate alerts and be notified only once a day if any anomaly found, no matter how many times the issue is reported.
+
+In order to include into the alert notification information about the exact resource, abnormal cost and detection type following additional alert rule configuration needed:
+
+![Alt text](pics/AlertCustomJsonPayload.png?raw=true "Alert rule custom json payload configuration")
+
+Then you will be able to see in the alert (in email for example) this:
+
+![Alt text](pics/AdditionalInfoInAlertNotification.png?raw=true "Anomaly detection info in alert notification")
+
+## How much does it cost?
 
 With Free Instance of Anomaly Detector service, you have 20000 transactions free per month. This number is high enough to execute the check a couple of times each day within whole month.
 
 Standard instance will cost you $0.314 per 1000 transactions (the price may vary per region).
 
-You can also run Anomaly Detection service also is distributed as Docker container and can be running on your own infrastructure. 
+You can also run Anomaly Detection service also is distributed as Docker container and can be running on your own infrastructure.
