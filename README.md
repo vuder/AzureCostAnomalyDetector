@@ -15,6 +15,8 @@ It is possible to manually check your Azure costs on a daily basis using Cost An
 
 [Azure Anomaly detector](https://azure.microsoft.com/services/cognitive-services/anomaly-detector/) is one of [Cognitive Services](https://azure.microsoft.com/services/cognitive-services/) that follows &quot;democratized AI&quot; principal. Use of this AI powered service does not require from developers to be AI expert. It is available in form of API making intelligence accessible for every developer. It is also don&#39;t need any dedicated software/hardware so it can be easily added to any application.
 
+![Alt text](pics/AnomalyDetector.png?raw=true "Architecture overview")
+
 In addition to main goal of implementation we will also see how to:
 
 - use Azure Cost Management API
