@@ -19,9 +19,9 @@ In addition to main goal of implementation we will also see how to:
 
 - use Azure Cost Management API
 - use Azure Anomaly Detector service to analyze costs for spikes and dips
-- setup Managed Identity to authorize Azure function to access something
+- [setup Managed Identity to authorize Azure function to access App Configuration and KeyVault](##setup-managed-identity-to-authorize-azure-function-to-access-app-configuration-and-keyVault)
 - setup Dependency Injection in Azure functions
-- use Azure Configuration service together with Azure functions
+- [use Azure Configuration and KeyVault service in Azure functions](##use-azure-configuration-and-keyVault-service-in-azure-functions)
 - run time triggered Azure function when debugging is starting
 - send metrics with custom properties to Azure Application Insights
 - [configure alerts with custom fields in Azure Monitor](##alert-setup)
@@ -46,9 +46,35 @@ but also in more advanced situations:
 
 If I was checking this manually, most likely I would not find any issue here. But the service figured out that there is a deviation in the data on weekends and detected anomalies for weekends and weekdays separately.
 
-## Azure AD App Registration setup
+## Setup Managed Identity to authorize Azure function to access App Configuration and KeyVault
 
-The app registration required
+## Use Azure Configuration and KeyVault service in Azure functions
+
+The function uses Azure App Configuration service as a source of configuration parameters and Azure KeyVault as a store for secrets.
+The only parameter that should be passed to the function is url to the App Configuration service:
+
+```cs
+ var appConfigConnection = Environment.GetEnvironmentVariable("AppConfigurationConnectionString");
+```
+
+then the function is setup to obtain configuration from the service:
+
+```cs
+      builder.AddAzureAppConfiguration(options => options.Connect(new Uri(appConfigConnection), credentials)
+                                                       .ConfigureKeyVault(kv =>
+                                                       {
+                                                           kv.SetCredential(credentials);
+                                                       }));
+```
+
+using credential that are automatically provided for Managed Identity configured early:
+
+```cs
+var credentials = new DefaultAzureCredential();
+```
+
+Secrets are stored in KeyVault and there are references to these secrets in App Configuration:
+![Alt text](pics/AppConfigSecrets.png?raw=true "AppConfiguration links to KeyVault secrets")
 
 ## Alert setup
 
