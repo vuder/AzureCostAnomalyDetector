@@ -57,6 +57,10 @@ The only parameter that should be passed to the function is url to the App Confi
  var appConfigConnection = Environment.GetEnvironmentVariable("AppConfigurationConnectionString");
 ```
 
+that is set in Configuration of the function application:
+
+![Alt text](pics/FunctionSettings.png?raw=true "Azure function Application configuration")
+
 then the function is setup to obtain configuration from the service:
 
 ```cs
