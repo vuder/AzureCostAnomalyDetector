@@ -19,12 +19,12 @@ In addition to main goal of implementation we will also see how to:
 
 - use Azure Cost Management API
 - use Azure Anomaly Detector service to analyze costs for spikes and dips
-- [setup Managed Identity to authorize Azure function to access App Configuration and KeyVault](##setup-managed-identity-to-authorize-azure-function-to-access-app-configuration-and-keyVault)
+- [setup Managed Identity to authorize Azure function to access App Configuration and KeyVault](#setup-managed-identity-to-authorize-azure-function-to-access-app-configuration-and-keyVault)
 - setup Dependency Injection in Azure functions
-- [use Azure Configuration and KeyVault service in Azure functions](##use-azure-configuration-and-keyVault-service-in-azure-functions)
+- [use Azure Configuration and KeyVault service in Azure functions](#use-azure-configuration-and-keyVault-service-in-azure-functions)
 - run time triggered Azure function when debugging is starting
 - send metrics with custom properties to Azure Application Insights
-- [configure alerts with custom fields in Azure Monitor](##alert-setup)
+- [configure alerts with custom fields in Azure Monitor](#alert-setup)
 
 ## Detection of anomalies in Azure cost
 
