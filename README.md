@@ -22,11 +22,11 @@ In addition to main goal of implementation we will also see how to:
 - use Azure Cost Management API
 - use Azure Anomaly Detector service to analyze costs for spikes and dips
 - [setup Managed Identity to authorize Azure function to access App Configuration and KeyVault](#setup-managed-identity-to-authorize-azure-function-to-access-app-configuration-and-keyVault)
-- setup Dependency Injection in Azure functions
 - [use Azure Configuration and KeyVault service in Azure functions](#use-azure-configuration-and-keyVault-service-in-azure-functions)
-- run time triggered Azure function when debugging is starting
-- send metrics with custom properties to Azure Application Insights
+- [run time triggered Azure function when debugging is starting](#run-time-triggered-azure-function-when-debugging-is-starting)
+- [send events and metrics with custom properties to Azure Application Insights](#send-events-and-metrics-with-custom-properties-to-azure-application-insights)
 - [configure alerts with custom fields in Azure Monitor](#alert-setup)
+- [how much does it cost](#how-much-does-it-cost)
 
 ## Detection of anomalies in Azure cost
 
@@ -82,6 +82,48 @@ var credentials = new DefaultAzureCredential();
 Secrets are stored in KeyVault and there are references to these secrets in App Configuration:
 ![Alt text](pics/AppConfigSecrets.png?raw=true "AppConfiguration links to KeyVault secrets")
 
+## Send events and metrics with custom properties to Azure Application Insights
+
+When a cost anomaly detected the function sends event to Application Insights with all information needed to identify the root cause of the spike.
+First TelemetryClient need to be initialized:
+
+```cs
+            var appInsightsInstrumentationKey = configuration["AzureCostAnomalyDetector.AppInsightsInstrumentationKey"];
+            _telemetryClient = new TelemetryClient(new TelemetryConfiguration(appInsightsInstrumentationKey));
+```
+
+then event with custom properties is sent to AppInsights:
+
+```cs
+            var anomalyEvent = new EventTelemetry("Azure cost anomaly");
+            anomalyEvent.Properties["Resource Type"] = resourceType;
+            anomalyEvent.Properties["Anomaly Cost"] = value.ToString(CultureInfo.InvariantCulture);
+            anomalyEvent.Properties["Date"] = date.ToShortDateString();
+            anomalyEvent.Properties["Detection Type"] = anomalyType.ToString();            
+            _telemetryClient.TrackEvent(anomalyEvent);
+```
+
+The events will be used by Azure Monitor to send alerts notification.
+In addition metric is sent to AppInsights:
+
+```cs
+            var metric = new MetricTelemetry("Number of Azure cost anomalies detected", 1)
+            {
+                Timestamp = DateTimeOffset.Now, 
+                MetricNamespace = "Custom monitoring"
+            };
+            
+            metric.Properties["Detection Type"] = anomalyType.ToString();
+            metric.Properties["Resource Type"] = resourceType;
+            _telemetryClient.TrackMetric(metric);
+            _telemetryClient.Flush();
+```
+
+The metric can be used to display the anomalies detections on graphs/dashboards. Properties of the metrics will be available as custom metric dimensions in Azure Monitor.
+
+The metric can also be used to configure alerts, it is even possible to setup alerting on custom metric dimensions. You have to check that "Enable alerting on custom metric dimensions" setting of your Application Insights instance is enabled:
+![Alt text](pics/Enable%20alerting%20on%20custom%20metric%20dimensions.png?raw=true "Enable alerting on custom metric dimensions")
+
 ## Alert setup
 
 Alert rule is configured in Azure Monitor using following query:
@@ -116,6 +158,22 @@ In order to include into the alert notification information about the exact reso
 Then you will be able to see in the alert (in email for example) this:
 
 ![Alt text](pics/AdditionalInfoInAlertNotification.png?raw=true "Anomaly detection info in alert notification")
+
+## Run time triggered Azure function when debugging is starting
+
+Following code template allow to run timer triggered function on debug start and you do not need to play with any workarounds.
+
+```cs
+        [FunctionName("AzureCostAnomalyDetector")]
+        public static async Task Run([TimerTrigger("0 0 17-23 * * *"
+            #if DEBUG 
+                , RunOnStartup = true
+            #endif
+                ) ]TimerInfo myTimer, ILogger logger)
+        {
+          
+        }
+```
 
 ## How much does it cost?
 
