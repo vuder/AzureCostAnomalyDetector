@@ -23,6 +23,7 @@ In addition to main goal of implementation we will also see how to:
 - use Azure Anomaly Detector service to analyze costs for spikes and dips
 - [setup Managed Identity to authorize Azure function to access App Configuration and KeyVault](#setup-managed-identity-to-authorize-azure-function-to-access-app-configuration-and-keyVault)
 - [use Azure Configuration and KeyVault service in Azure functions](#use-azure-configuration-and-keyVault-service-in-azure-functions)
+- [run time triggered Azure function manually](#run-time-triggered-azure-function-manually)
 - [run time triggered Azure function when debugging is starting](#run-time-triggered-azure-function-when-debugging-is-starting)
 - [send events and metrics with custom properties to Azure Application Insights](#send-events-and-metrics-with-custom-properties-to-azure-application-insights)
 - [configure alerts with custom fields in Azure Monitor](#alert-setup)
@@ -49,6 +50,29 @@ but also in more advanced situations:
 If I was checking this manually, most likely I would not find any issue here. But the service figured out that there is a deviation in the data on weekends and detected anomalies for weekends and weekdays separately.
 
 ## Setup Managed Identity to authorize Azure function to access App Configuration and KeyVault
+
+The function getting all needed configuration values from Azure App Configuration service. The service also provides references to Azure Key Vault where required by the function secrets are stored. So the function have to be authorized to read data from both AppConfiguration and KeyVault. Best way to configure this access is to use Managed Identity:
+
+1. Create Managed identity for the function app(Function App>Identity>System Assigned>Status:On)
+
+1. Grant read access for the identity to AppConfiguration(App Configuration>Access Control>Role Assignments>Add>Add Role Assignment). Grant "App Configuration Data Reader" role to the created function app identity.
+
+1. Grant read access to secrets for the identity to Key Vault
+
+### How to run the function locally and being authorized to access App Configuration and KeyVault
+
+1. Setup Azure AD App Registration with "Web" platform, generate client secret
+
+1. Grant access permissions to the App Registration in App Configuration and Key Vault similarly to previously created Managed Identity
+
+1. Set values of following environment variables on your local machine using new App Registration info:
+    - AZURE_CLIENT_ID
+    - AZURE_CLIENT_SECRET
+    - AZURE_TENANT_ID
+
+    For Mac OS use [EnvPane](https://github.com/hschmidt/EnvPane)
+
+1. No changes in code of the function are needed - DefaultAzureCredential class will take care to find available authorization mechanism and it will work with both Managed Identity and connect using App Registration using the environment variables
 
 ## Use Azure Configuration and KeyVault service in Azure functions
 
@@ -158,6 +182,22 @@ In order to include into the alert notification information about the exact reso
 Then you will be able to see in the alert (in email for example) this:
 
 ![Alt text](pics/AdditionalInfoInAlertNotification.png?raw=true "Anomaly detection info in alert notification")
+
+## Run time triggered Azure function manually
+
+Call the following administrator endpoint to trigger any kind of non-HTTP functions including time triggered:
+
+```code
+[POST] http://localhost:7071/admin/functions/AzureCostAnomalyDetector
+```
+
+To pass test data set JSON body of the request(optional):
+
+```json
+{
+    "input": "<trigger_input>"
+}
+```
 
 ## Run time triggered Azure function when debugging is starting
 
