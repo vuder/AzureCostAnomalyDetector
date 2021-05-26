@@ -13,6 +13,8 @@ Not always these additional expenses are expected, sometimes your bills are high
 
 It is possible to manually check your Azure costs on a daily basis using Cost Analysis dashboards of Azure Portal. This process is time consuming and it is not always possible to spot a change in cost of certain resource. In order to automate this process, we will use Azure function that will be fired on schedule. The function will get Azure costs information from Cost management API, analyze changes for possible anomalies and write information about found issues. The information can then be checked by Azure Monitor alert rule and when abnormal change in consumption found – the alert will notify its recipients about the issue.
 
+> **_NOTE:_** If you use AWS - you more lucky than me, Amazon has [service that will help you](https://aws.amazon.com/aws-cost-management/aws-cost-anomaly-detection/)
+
 [Azure Anomaly detector](https://azure.microsoft.com/services/cognitive-services/anomaly-detector/) is one of [Cognitive Services](https://azure.microsoft.com/services/cognitive-services/) that follows &quot;democratized AI&quot; principal. Use of this AI powered service does not require from developers to be AI expert. It is available in form of API making intelligence accessible for every developer. It is also don&#39;t need any dedicated software/hardware so it can be easily added to any application.
 
 ![Alt text](pics/AnomalyDetector.png?raw=true "Architecture overview")
@@ -27,6 +29,11 @@ In addition to main goal of implementation we will also see how to:
 - [run time triggered Azure function when debugging is starting](#run-time-triggered-azure-function-when-debugging-is-starting)
 - [send events and metrics with custom properties to Azure Application Insights](#send-events-and-metrics-with-custom-properties-to-azure-application-insights)
 - [configure alerts with custom fields in Azure Monitor](#alert-setup)
+
+See also:
+
+- [limitations/feature of the implementation](#limitations-and-feature-of-the-implementation)
+- [all function configuration parameters](#function-configuration-parameters)
 - [how much does it cost](#how-much-does-it-cost)
 
 ## Detection of anomalies in Azure cost
@@ -201,7 +208,7 @@ To pass test data set JSON body of the request(optional):
 
 ## Run time triggered Azure function when debugging is starting
 
-Following code template allow to run timer triggered function on debug start and you do not need to play with any workarounds.
+Following code template allow to run timer triggered function on debug start and you do not need to play with any workarounds(.Net Core 3.x.x).
 
 ```cs
         [FunctionName("AzureCostAnomalyDetector")]
@@ -214,6 +221,26 @@ Following code template allow to run timer triggered function on debug start and
           
         }
 ```
+
+## Limitations and feature of the implementation
+
+Azure cost management does not provides information about consumed resources in real time. Usually the cost becomes available for evaluation in second half of next day. So it make sense to wait until the cost data become available snd then run the function - now the time trigger is configured to run hourly between 17:00 and 23:00.
+
+## Function configuration parameters
+
+Parameter name | Description | Recommended value
+--- | --- | ---
+AzureCostAnomalyDetector.AnomalyDetectorCheckDaysBack|Number od days back from current date for Azure cost anomaly check|1
+AzureCostAnomalyDetector.AnomalyDetectorCheckPeriod|The time period of data used for Azure cost anomaly detection. Possible value: n days, n week, n month,n year, n years. where n is a number|3 Month
+AzureCostAnomalyDetector.AnomalyDetectorEndpoint|URL to Anomaly Detector service used for Azure cost monitoring|*provide your url*
+AzureCostAnomalyDetector.AnomalyDetectorReportDropsInCost|The value is used to determine whether report dips in cost in addition to spikes by Anomaly Detector|false
+AzureCostAnomalyDetector.CostAlertThreshold|Threshold in $ of changes in cost that will be ignored by Azure Costs Anomaly Detector function|0.5
+Ad-AzureTenantId|Azure AD tenant Id. The Id is needed to format URL that is used to get access token for Cost Management API|*provide the tenant id*
+AzureCostAnomalyDetector-AnomalyDetectorKey|Access Key of Anomaly Detector service used for Azure cost monitoring| *provide the key*
+AzureCostAnomalyDetector-AppInsightsInstrumentationKey|AppInsights InstrumentationKey. The key is needed to authorize requests to send info about detected anomalies| *provide the key*
+AzureCostAnomalyDetector-AzureAppRegistrationClientId|Client Id of App Registration used by the Azure Cost Monitor function|*prove client id*
+AzureCostAnomalyDetector-AzureAppRegistrationClientSecret|Client secret of App Registration used by the Azure Cost Monitor function|*provide the secret*
+AzureCostAnomalyDetector-AzureSubscriptionId|Id of Azure subscription where App Registration for the Azure Cost Monitor function located|*provide the id*
 
 ## How much does it cost?
 
