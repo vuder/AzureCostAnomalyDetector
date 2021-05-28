@@ -264,3 +264,4 @@ __pycache__/
 *.pyc
 /AzureCostAnomalyDetector.AzureFunc/Properties/serviceDependencies.local.json
 /.vscode
+.DS_Store

@@ -21,8 +21,8 @@ It is possible to manually check your Azure costs on a daily basis using Cost An
 
 In addition to main goal of implementation we will also see how to:
 
-- use Azure Cost Management API
-- use Azure Anomaly Detector service to analyze costs for spikes and dips
+- [use Azure Cost Management API](#detection-of-anomalies-in-azure-cost)
+- [use Azure Anomaly Detector service to analyze costs for spikes and dips](#detection-of-anomalies-in-azure-cost)
 - [setup Managed Identity to authorize Azure function to access App Configuration and KeyVault](#setup-managed-identity-to-authorize-azure-function-to-access-app-configuration-and-keyVault)
 - [use Azure Configuration and KeyVault service in Azure functions](#use-azure-configuration-and-keyVault-service-in-azure-functions)
 - [run time triggered Azure function manually](#run-time-triggered-azure-function-manually)
@@ -38,7 +38,7 @@ See also:
 
 ## Detection of anomalies in Azure cost
 
-Current implementation of the function configured to check anomalies in cost per each consumed resource type for a subscription with configured id.
+Current implementation of the function configured to check anomalies in cost per each consumed resource type for specified subscription.
 
 Anomaly Detector automatically selects the right anomaly detection algorithm to properly analyze changes in Azure cost. Besides spikes and dips, Anomaly Detector also detects many other kinds of anomalies, such as trend change and off-cycle softness, all in one single API endpoint.
 
@@ -46,7 +46,7 @@ The function will be able to alert you when consumption of certain type of resou
 
 ![Alt text](pics/Simple%20Spike.png?raw=true "Simple cost spike detected")
 
-or
+or this:
 
 ![Alt text](pics/Simple%20Spike%202.png?raw=true "Simple cost spike detected 2")
 
@@ -54,7 +54,7 @@ but also in more advanced situations:
 
 ![Alt text](pics/weekends%20anomaly.png?raw=true "Advanced cost spike detected")
 
-If I was checking this manually, most likely I would not find any issue here. But the service figured out that there is a deviation in the data on weekends and detected anomalies for weekends and weekdays separately.
+If I was checking this manually, most likely I would not find any issue with the highlighted in red days. But the service figured out that there is a deviation in the data on weekends and detected anomalies for weekends and weekdays separately.
 
 ## Setup Managed Identity to authorize Azure function to access App Configuration and KeyVault
 
@@ -64,9 +64,11 @@ The function getting all needed configuration values from Azure App Configuratio
 
 1. Grant read access for the identity to AppConfiguration(App Configuration>Access Control>Role Assignments>Add>Add Role Assignment). Grant "App Configuration Data Reader" role to the created function app identity.
 
-1. Grant read access to secrets for the identity to Key Vault
+1. Grant read access to secrets for the identity in corresponding Key Vault
 
 ### How to run the function locally and being authorized to access App Configuration and KeyVault
+
+The configuration below allow to run and debug Azure function locally while the function will be able to get configuration form Azure using the same code.
 
 1. Setup Azure AD App Registration with "Web" platform, generate client secret
 
@@ -79,7 +81,7 @@ The function getting all needed configuration values from Azure App Configuratio
 
     For Mac OS use [EnvPane](https://github.com/hschmidt/EnvPane)
 
-1. No changes in code of the function are needed - DefaultAzureCredential class will take care to find available authorization mechanism and it will work with both Managed Identity and connect using App Registration using the environment variables
+1. No changes in code of the function are needed - DefaultAzureCredential class will take care to find available authorization mechanism and it will work with both Managed Identity and connect with App Registration using the environment variables
 
 ## Use Azure Configuration and KeyVault service in Azure functions
 
@@ -94,7 +96,7 @@ that is set in Configuration of the function application:
 
 ![Alt text](pics/FunctionSettings.png?raw=true "Azure function Application configuration")
 
-then the function is setup to obtain configuration from the service:
+then the function is setup to obtain configuration from the App Configuration and Key Vault services:
 
 ```cs
       builder.AddAzureAppConfiguration(options => options.Connect(new Uri(appConfigConnection), credentials)
@@ -104,7 +106,7 @@ then the function is setup to obtain configuration from the service:
                                                        }));
 ```
 
-using credential that are automatically provided for Managed Identity configured early:
+using credential that are automatically provided for Managed Identity(or App Registration) configured early:
 
 ```cs
 var credentials = new DefaultAzureCredential();
