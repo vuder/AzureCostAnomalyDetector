@@ -30,6 +30,10 @@ namespace AzureCostAnomalyDetector.AzureFunc
         {
             var builder = new ConfigurationBuilder();
             var appConfigConnection = Environment.GetEnvironmentVariable("AppConfigurationConnectionString");
+            if (appConfigConnection == null)
+            {
+                throw new ArgumentNullException("App Configuration servic url is not provided");
+            }
             var credentials = new DefaultAzureCredential();
 
             builder.AddAzureAppConfiguration(options => options.Connect(new Uri(appConfigConnection), credentials)
@@ -65,14 +69,14 @@ namespace AzureCostAnomalyDetector.AzureFunc
         [FunctionName("AzureCostAnomalyDetector")]
         public static async Task Run([TimerTrigger("0 0 17-23 * * *"
             #if DEBUG 
-                , RunOnStartup = true
+               , RunOnStartup = true
             #endif
                 ) ]TimerInfo myTimer, ILogger logger)
         {
             logger.LogInformation($"Trigger function execution at {DateTime.Now}");
 
             var costRetriever = new AzureCostRetrieverService(_azureAppRegistrationClientId, _azureAppRegistrationClientSecret, _azureTenantId, logger);
-            
+
 
             var dayToCheck = DateTime.UtcNow.AddDays(-1 * Math.Abs(_daysBackToCheck));
             var detectionContext = new LastDayDetectionContext(
@@ -106,15 +110,15 @@ namespace AzureCostAnomalyDetector.AzureFunc
             //The id is used to deduplicate alerts.
             //An anomaly of same type detected at same date, for same resource type could be spot by checking the id - it will be the same regardless of number of generated events and their timestamps.
             anomalyEvent.Properties["DetectionId"] = $"{resourceType}-{date.ToShortDateString()}-{anomalyType}";
-            
+
             _telemetryClient.TrackEvent(anomalyEvent);
 
             var metric = new MetricTelemetry("Number of Azure cost anomalies detected", 1)
             {
-                Timestamp = DateTimeOffset.Now, 
+                Timestamp = DateTimeOffset.Now,
                 MetricNamespace = "Custom monitoring"
             };
-            
+
             metric.Properties["Detection Type"] = anomalyType.ToString();
             metric.Properties["Resource Type"] = resourceType;
             _telemetryClient.TrackMetric(metric);
