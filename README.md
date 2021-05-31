@@ -1,5 +1,7 @@
 # How to detect spikes in Azure cost using Anomaly Detector AI service
 
+[Project source code](https://github.com/vuder/AzureCostAnomalyDetector)
+
 If your company uses Azure heavily you already have this problem - cost of consumed resources may increase at any moment due to different reasons:
 
 - Manual or auto scale operation executed
