@@ -239,12 +239,12 @@ AzureCostAnomalyDetector.AnomalyDetectorCheckPeriod|The time period of data used
 AzureCostAnomalyDetector.AnomalyDetectorEndpoint|URL to Anomaly Detector service used for Azure cost monitoring|*provide your url*
 AzureCostAnomalyDetector.AnomalyDetectorReportDropsInCost|The value is used to determine whether report dips in cost in addition to spikes by Anomaly Detector|false
 AzureCostAnomalyDetector.CostAlertThreshold|Threshold in $ of changes in cost that will be ignored by Azure Costs Anomaly Detector function|0.5
-Ad-AzureTenantId|Azure AD tenant Id. The Id is needed to format URL that is used to get access token for Cost Management API|*provide the tenant id*
-AzureCostAnomalyDetector-AnomalyDetectorKey|Access Key of Anomaly Detector service used for Azure cost monitoring| *provide the key*
-AzureCostAnomalyDetector-AppInsightsInstrumentationKey|AppInsights InstrumentationKey. The key is needed to authorize requests to send info about detected anomalies| *provide the key*
-AzureCostAnomalyDetector-AzureAppRegistrationClientId|Client Id of App Registration used by the Azure Cost Monitor function|*prove client id*
-AzureCostAnomalyDetector-AzureAppRegistrationClientSecret|Client secret of App Registration used by the Azure Cost Monitor function|*provide the secret*
-AzureCostAnomalyDetector-AzureSubscriptionId|Id of Azure subscription where App Registration for the Azure Cost Monitor function located|*provide the id*
+Ad.AzureTenantId|Azure AD tenant Id. The Id is needed to format URL that is used to get access token for Cost Management API|*provide the tenant id*
+AzureCostAnomalyDetector.AnomalyDetectorKey|Access Key of Anomaly Detector service used for Azure cost monitoring| *provide the key*
+AzureCostAnomalyDetector.AppInsightsInstrumentationKey|AppInsights InstrumentationKey. The key is needed to authorize requests to send info about detected anomalies| *provide the key*
+AzureCostAnomalyDetector.AzureAppRegistrationClientId|Client Id of App Registration used by the Azure Cost Monitor function|*prove client id*
+AzureCostAnomalyDetector.AzureAppRegistrationClientSecret|Client secret of App Registration used by the Azure Cost Monitor function|*provide the secret*
+AzureCostAnomalyDetector.AzureSubscriptionId|Id of Azure subscription where App Registration for the Azure Cost Monitor function located|*provide the id*
 
 ## How much does it cost?
 
